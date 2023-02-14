@@ -1,6 +1,7 @@
 const exp = require("express");
 const userApp = exp.Router();
 const ObjectId = require('mongodb').ObjectId;
+const asyncHandler = require('express-async-handler')
 const { validateUsername, validatePassword } = require('./joi');
 
 
@@ -21,11 +22,7 @@ userApp.get("/get-users", async (request, response) => {
 
 
 //route for POST req
-userApp.post("/create-user", async (request, response) => {
-  //get usercollectionobj
-  let userCollectionObject = request.app.get("userCollectionObject");
-  //get userObj from client
-  let userObj = request.body;
+userApp.post("/create-user", asyncHandler(async (request, response) => {
 
   //validating username by calling validateUsername from joi.js module
   const userValidation = await validateUsername(userObj.username);
@@ -43,6 +40,13 @@ userApp.post("/create-user", async (request, response) => {
     response.send({ message: `password validation error: ${passwordValidation.error}` });
     return;
   }
+
+  //get usercollectionobj
+  let userCollectionObject = request.app.get("userCollectionObject");
+  console.log(userCollectionObject)
+  //get userObj from client
+  let userObj = request.body;
+
 
 
   //verify existing user
@@ -50,36 +54,33 @@ userApp.post("/create-user", async (request, response) => {
     username: userObj.username,
   });
 
-
-
   //if user existed
   if (userOfDB !== null) {
-    response.send({ message: "User already Present" });
+    response.status(200).send({ message: "User already Present" });
   }
   //if user not existed
   else {
     await userCollectionObject.insertOne(userObj);
     //send res
-    response.send({ message: "New User Created" });
+    response.status(200).send({ message: "New User Created" });
   }
-});
+}));
 
 
 
 //route for PUT req
-userApp.put("/update-user", async (request, response) => {
+userApp.put("/update-user", asyncHandler(async (request, response) => {
   //get usercollectionobj
   let userCollectionObject = request.app.get("userCollectionObject");
   //get userObj from client
   let userObj = request.body;
-
 
   //validating username by calling validateUsername from joi.js module
   const userValidation = await validateUsername(userObj.username);
   if (userValidation.error) {
     console.log(`Username validation error: ${userValidation.error}`);
 
-    response.send({ message: `Username validation error: ${userValidation.error}` });
+    response.status(400).send({ message: `Username validation error: ${userValidation.error}` });
     return;
   }
 
@@ -87,10 +88,9 @@ userApp.put("/update-user", async (request, response) => {
   const passwordValidation = await validatePassword(userObj.password);
   if (passwordValidation.error) {
     console.log('Password validation error');
-    response.send({ message: `password validation error: ${passwordValidation.error}` });
+    response.status(400).send({ message: `password validation error: ${passwordValidation.error}` });
     return;
   }
-
 
   let res = await userCollectionObject.updateOne(
     { username: userObj.username },
@@ -99,11 +99,10 @@ userApp.put("/update-user", async (request, response) => {
 
   //send res
   if (res.modifiedCount === 1)
-    response.send({ message: "Put Request Successful" });
+    response.status(200).send({ message: "Put Request Successful" });
   else
     response.send({ message: "put request failed" });
-});
-
+}));
 
 
 //route for DELETE req
