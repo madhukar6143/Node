@@ -33,9 +33,12 @@ app.get('/', function (req, res) {
 
 //import userApp&productApp
 const userApp = require("./module/data");
+const loginApp = require("./module/login")
 
 //execute routes based on path
 app.use("/user",userApp)
+
+app.use("/login",loginApp)
 
 //assign port
 const port=4000;
